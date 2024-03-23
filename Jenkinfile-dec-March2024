@@ -3,41 +3,60 @@ pipeline{
    //options{}
    //triggers{}
    tools {
+//def mavenHome = tool name: 'maven3.9.6'
       maven 'maven3.9.6'
-   }
+  }
+   // make sure to configure pom.xml in maven server to commuicate with sonaqube, nexus,tomcat,jenkins servers.
+   //def mavenHome = tool name: 'maven3.9.6'
    stages{
     stage('1.CloneCode'){
       steps{
          sh  "echo cloning the latest app version"
-         git 'https://github.com/LandmakTechnology/maven-web-application'
+         git 'https://github.com/LandmakTechnology/maven-web-application' 
+          // with private repo need credential: goto pinline syntax>sample steps=git>private githugrepo>branch=master>add credentials=select credential>try using
+           //privat repo but for this exercise use pubrepo
+           // generatepipelinscript>copy script> then use git credentialsId: 'githubcred', url: 'https://github.com/LandmakTechnology/maven-web-app' instead of pub. repo above.
+          // apply>save>build now.
+         //sh "git clone https://github.com/LandmarkTechnology/maven-web-application" 
+         //bat "git clone https://github.com/LandmarkTechnology/maven-web-application"   FOR WINDOWS
       }
     }
     stage('2.mvnBuild'){
       steps{
        sh "echo validate, compile and perform UnitTesting"
        sh "echo UnitTesting must passed for artifacts to be created"
-       sh "mvn clean package"
+       //sh "mvn clean package" this will not work so use absolute path, see next line
+       // [jenkins@jenkins~]$ls var/lib/jenkins/tools/hudson.tasks.Maven_MavenInstallation/maven3.9.6/bin/mvn package
+       sh "var/lib/jenkins/tools/hudson.tasks.Maven_MavenInstallation/maven3.9.6/bin/mvn package"
+        // instead of using this long path, u can create function b4 the stages and define it as maven home = tool name: 'maven3.9.6 as seen in lines 5&6&7
+        //uncomment the def fn above and use sh "${mavenHome}/bin/mvn package"
       }
 }
     }
 /*
     stage('3.CodeQuality'){
       steps{
+           //edit pom.xml propertiesTAG with sonaqube server details
          //sh "mvn sonar:sonar"
-         sh "echo CodeQualityAnalysis completed"          
+         sh "echo CodeQualityAnalysis completed" 
+          // also use created function here ie
+          sh "${mavenHome}/bin/mvn sonar:sonar"
       }
 
     }
     stage('4.UploadArtifacts'){
       steps{
-          sh "mvn deploy" 
+          //sh "mvn deploy" 
           sh "echo artifacts uploaded successfully"
           sh "echo I am now a Build and Release Engineer"
-          sh "echo Build and release completed"         
+          sh "echo Build and release completed"
+           sh "${mavenHome}/bin/mvn deploy"
       }
     }
     stage('5.Deploy2UAT'){
       steps{
+       // use deploy to container plugin ie goto pinelinesyntax>sample steps=deploy war/ear to a container>WAR/EAR files=target/*war>container=tomcat9x>selece credentials eg
+        //landmark/******(tomcat-credentials)>goto tomcat brower and copy tomcatserverUrl>
         sh "echo Deployment is ready for the client review"
         sh "echo using deploy to container plugin" 
         deploy adapters: [tomcat9(credentialsId: 'tomcat-credentials', path: '', url: 'http://172.31.30.76:8080/')], contextPath: null, war: 'target/*war'
